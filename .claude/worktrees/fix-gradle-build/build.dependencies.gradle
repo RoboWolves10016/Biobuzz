@@ -1,0 +1,29 @@
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.dairy.foundation/releases/'}
+    google() // Needed for androidx
+    mavenLocal() // WolfKit, until it is on Maven Central
+}
+
+dependencies {
+    implementation 'org.firstinspires.ftc:Inspection:12.0.0'
+    implementation 'org.firstinspires.ftc:Blocks:12.0.0'
+    implementation 'org.firstinspires.ftc:RobotCore:12.0.0'
+    implementation 'org.firstinspires.ftc:RobotServer:12.0.0'
+    implementation 'org.firstinspires.ftc:OnBotJava:12.0.0'
+    implementation 'org.firstinspires.ftc:Hardware:12.0.0'
+    implementation 'org.firstinspires.ftc:FtcCommon:12.0.0'
+    implementation 'org.firstinspires.ftc:Vision:12.0.0'
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+
+    implementation 'com.pedropathing:revhub:3.0.1'
+    implementation 'com.pedropathing:tuning:1.0.1'
+
+    implementation 'io.github.robowolves10016:wolfkit-core:0.2.0'  // logging, log files and the WolfDash page
+    implementation 'io.github.robowolves10016:wolfkit-pedro:0.2.0' // Pedro poses and paths
+    implementation 'io.github.robowolves10016:wolfvision-ftc:0.1.0'
+    implementation 'io.github.robowolves10016:wolfvision-studio:0.1.0'
+    implementation 'io.github.robowolves10016:apiary:0.1.0' // hive states and poses from the hive tags
+//    implementation 'io.github.robowolves10016:apiary-limelight:0.1.0' // limelight interface
+    implementation 'io.github.robowolves10016:apiary-wolfkit:0.1.0' // shows them in WolfDash and AdvantageScope
+}
