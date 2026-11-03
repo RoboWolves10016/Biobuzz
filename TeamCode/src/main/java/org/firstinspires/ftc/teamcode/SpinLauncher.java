@@ -12,7 +12,6 @@ import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 public class SpinLauncher extends OpMode {
     MotorEx motor1;
     MotorEx motor2;
-    boolean on = false;
     @Logged double targetRpm = 0;
 
     @Logged double rpm1 = 0;
@@ -38,23 +37,16 @@ public class SpinLauncher extends OpMode {
 
     @Override
     public void loop() {
-        kV = WolfKit.tunable("kV", 0.002);
-        kP = WolfKit.tunable("kP", 0);
-        kF = WolfKit.tunable("kF", 0.0);
+        targetRpm = WolfKit.tunable("TargetRPM", 0);
+        kV = WolfKit.tunable("kV", 0.00019);
+        kP = WolfKit.tunable("kP", 0.002);
+        kF = WolfKit.tunable("kF", 0.13);
 
         if (gamepad1.rightBumperWasPressed()) targetRpm = targetRpm + 100;
         if (gamepad1.leftBumperWasPressed()) targetRpm = targetRpm - 100;
-//
-//        if (gamepad1.rightBumperWasPressed()) power = power + 0.1;
-//        if (gamepad1.leftBumperWasPressed()) power = power - 0.1;
-
-//        if (power > 1) power = 1;
-//        if (power < -1) power = -1;
 
         rpm1 = (motor1.getCorrectedVelocity() / 28) * 60;
         rpm2 = (motor2.getCorrectedVelocity() / 28) * 60;
-
-//        double error = rpm1 - targetRpm;
 
         double power = kV * targetRpm;
         double error = targetRpm - rpm1;
