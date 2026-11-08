@@ -1,9 +1,5 @@
 package org.firstinspires.ftc.teamcode;
 
-import static org.firstinspires.ftc.teamcode.Constants.cameraForward;
-import static org.firstinspires.ftc.teamcode.Constants.cameraLeft;
-import static org.firstinspires.ftc.teamcode.Constants.cameraTiltUp;
-import static org.firstinspires.ftc.teamcode.Constants.cameraUp;
 import static org.firstinspires.ftc.teamcode.Constants.closedBobbyPos;
 import static org.firstinspires.ftc.teamcode.Constants.kCloseLeftZeroPose;
 import static org.firstinspires.ftc.teamcode.Constants.kCloseRightZeroPose;
@@ -13,14 +9,17 @@ import static org.firstinspires.ftc.teamcode.Constants.kFarRightZeroPose;
 import static org.firstinspires.ftc.teamcode.Constants.kLeftCellPose;
 import static org.firstinspires.ftc.teamcode.Constants.kP;
 import static org.firstinspires.ftc.teamcode.Constants.kRightCellPose;
+import static org.firstinspires.ftc.teamcode.Constants.kSpatulaUpPos;
 import static org.firstinspires.ftc.teamcode.Constants.kV;
 import static org.firstinspires.ftc.teamcode.Constants.openBobbyPos;
+import static org.firstinspires.ftc.teamcode.pedro.Constants.createFused;
 
 import com.pedropathing.drivetrain.DrivePowers;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.math.Pose;
 import com.pedropathing.math.Vector2D;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.robowolves.wolfkit.Logged;
@@ -31,14 +30,11 @@ import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
-import com.pedropathing.localization.FusionLocalizer;
 
-//import io.github.robowolves10016.apiary.Apiary;
-//import io.github.robowolves10016.apiary.Pose2;
-//import io.github.robowolves10016.apiary.pedro.ApiaryPedro;
-//import io.github.robowolves10016.apiary.wolfkit.ApiaryWolfKit;
+import org.firstinspires.ftc.teamcode.Constants;
 
-import org.firstinspires.ftc.teamcode.pedro.Constants;
+
+import java.util.List;
 
 @TeleOp(name="Teleop", group="OCCRA")
 public class Teleop extends OpMode {
@@ -48,6 +44,9 @@ public class Teleop extends OpMode {
     private MotorEx launcher1;
     private MotorEx launcher2;
     private ServoEx gateBobby;
+
+    private ServoEx spatula;
+    private List<LynxModule> hubs;
 
 
     private PIDController aimController = new PIDController(0, 0, 0);
@@ -61,10 +60,16 @@ public class Teleop extends OpMode {
     double launcherRpm = 0.0;
 
     @Logged boolean autoAim = false;
+    @Logged double spatulaTarget = kSpatulaUpPos;
 
     @Override
     public void init() {
-        drivetrain = Constants.createFused(hardwareMap);
+        // Read every motor encoder on a hub in one command per loop instead of one per call.
+        // MANUAL means the cache holds until clearBulkCache(), which loop() does first thing.
+        hubs = hardwareMap.getAll(LynxModule.class);
+        for (LynxModule hub : hubs) hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+
+        drivetrain = createFused(hardwareMap);
         drivetrain.manual();
 //        vision = new ApiaryPedro((FusionLocalizer) drivetrain.localizer);
 
@@ -83,6 +88,8 @@ public class Teleop extends OpMode {
 
         gateBobby = new ServoEx(hardwareMap, "Bobby");
 
+        spatula = new ServoEx(hardwareMap, "spatula");
+        spatula.setCachingTolerance(0.01);
 //        apiary = new Apiary(
 //                hardwareMap,
 //                "limelight",
@@ -101,6 +108,8 @@ public class Teleop extends OpMode {
 
     @Override
     public void loop() {
+        for (LynxModule hub : hubs) hub.clearBulkCache();
+
         autoAim = gamepad1.left_bumper;
 //        kV = WolfKit.tunable("kV", 0.00019);
 //        kF = WolfKit.tunable("kF", 0.13);
@@ -109,14 +118,13 @@ public class Teleop extends OpMode {
         if (launcherOverride) targetRpm = WolfKit.tunable("TargetRPM", 0);
 
 
-
 //        if (gamepad2.rightBumperWasPressed()) targetRpm = targetRpm + 100;
 //        if (gamepad2.leftBumperWasPressed()) targetRpm = targetRpm - 100;
         if (targetRpm == 1800) {
             ;
-        } else if (gamepad2.y){
-            targetRpm = 3200;
-        } else if (gamepad2.b){
+        } else if (gamepad2.y) {
+            targetRpm = 3225;
+        } else if (gamepad2.b) {
             targetRpm = 0.0;
         }
 
@@ -141,7 +149,7 @@ public class Teleop extends OpMode {
         double intakePower = WolfKit.tunable("IntakePower", 0);
         if (gamepad2.left_trigger > 0.1) {
             intakePower = 1;
-        } else if (gamepad2.left_bumper){
+        } else if (gamepad2.left_bumper) {
             intakePower = -1;
         }
         intake.set(intakePower);
@@ -189,17 +197,9 @@ public class Teleop extends OpMode {
 
         drivetrain.update();
 
-        // Apiary follows the hives using the fused pose, and its positions go back into the filter.
-//        Pose2 robot = vision.robotPose();
-//        WolfKit.log("Apiary/visionPose", new Pose(robot.getX(), robot.getY(), robot.getHeading()));
-//        apiary.update(robot.getX(), robot.getY(), robot.getHeading());
-//        vision.add(apiary.getNewPoses());
-//        ApiaryWolfKit.log(apiary);
-//        WolfKit.log("Apiary/Fusion/Accepted", vision.getAccepted());
-//        WolfKit.log("Apiary/Fusion/Rejected", vision.getRejected());
         WolfKitPedro.log("Drive/Fused", drivetrain.pose());
 
-        if (gamepad1.start) {
+        if (gamepad1.back) {
             Pose zeroPose = drivetrain.pose().x() < 72 ? (
                     drivetrain.pose().y() > 72 ? kCloseLeftZeroPose : kCloseRightZeroPose
             ) : (
@@ -208,6 +208,16 @@ public class Teleop extends OpMode {
             drivetrain.setPose(zeroPose);
         }
         robotState.setPose(drivetrain.pose());
+
+        if (gamepad1.rightBumperWasPressed()) {
+            if (spatulaTarget == Constants.kSpatulaUpPos) spatulaTarget = Constants.kSpatulaDownPos;
+            else spatulaTarget = Constants.kSpatulaUpPos;
+        }
+
+        if (WolfKit.tunable("SpatulaOverride", false)) {
+            spatulaTarget = WolfKit.tunable("SpatulaOverridePos", 0.5);
+        }
+        spatula.set(spatulaTarget);
     }
 
     @Override

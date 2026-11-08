@@ -35,8 +35,8 @@ public class Constants {
     public static PinpointConfig localizerConfig = new PinpointConfig(c -> {
         c.name.set("pinpoint");
         c.podType.set(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        c.xPodOffset.set(1.3152014364407758);
-        c.yPodOffset.set(-4.463954835426151);
+        c.xPodOffset.set(56 / 25.4);
+        c.yPodOffset.set(-5.625);
         c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
         c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
         c.globalDistanceUnit.set(DistanceUnit.INCH);
@@ -45,31 +45,45 @@ public class Constants {
 
     public static ForesightConfig foresightConfig = new ForesightConfig(
             c -> {
-                Controller primaryTranslationalForward = Controller.proportional(0.23846459920099697);
-                Controller secondaryTranslationalForward = Controller.proportional(0.08810629751332492);
-                Controller primaryTranslationalLateral = Controller.proportional(0.4045830879129142);
-                Controller secondaryTranslationalLateral = Controller.proportional(0.14948264032460998);
+                Controller primaryTranslationalForward = Controller.proportional(0.2605077427560874);
+                Controller secondaryTranslationalForward = Controller.proportional(0.0962506500532872);
+                Controller primaryTranslationalLateral = Controller.proportional(0.3718985657670391);
+                Controller secondaryTranslationalLateral = Controller.proportional(0.13740658273822554);
 
                 c.forwardTranslational.set(Controller.piecewise(secondaryTranslationalForward).put(2.5, primaryTranslationalForward));
                 c.strafeTranslational.set(Controller.piecewise(secondaryTranslationalLateral).put(2.5, primaryTranslationalLateral));
 
-                c.coast.set(Controller.proportionalFeedforward(0.017254818636828963));
-                c.brake.set(Controller.proportionalFeedforward(0.014666595841304617));
+                c.coast.set(Controller.proportionalFeedforward(0.016960121013997943));
+                c.brake.set(Controller.proportionalFeedforward(0.01441610286189825));
 
-                c.headingFeedback.set(Controller.proportional(3.92789763245283));
-                c.headingBrakeCoefficients.set(Vector2D.cartesian(0.04643459119492776, 0.004356751113233625));
+                c.headingFeedback.set(Controller.proportional(5.039041100804522));
+                c.headingBrakeCoefficients.set(Vector2D.cartesian(0.03777735444857529, 0.007490942697974316));
 
-                c.linearBrakeCoefficients.set(Matrix.diag(0.07226709362999605, 0.06266078320083113));
-                c.quadraticBrakeCoefficients.set(Matrix.diag(0.0010934756898756301, 0.0013555737598267407));
+                c.linearBrakeCoefficients.set(Matrix.diag(0.0658940804125789, 0.045542338125887025));
+                c.quadraticBrakeCoefficients.set(Matrix.diag(0.001273330955467476, 0.0016376365397046892));
 
-                c.maxAchievableForwardVelocity.set(60.78274270104115);
-                c.maxAchievableStrafeVelocity.set(50.77943233315055);
-                c.naturalForwardDeceleration.set(33.56698917706593);
-                c.naturalStrafeDeceleration.set(64.75897979864621);
+                c.maxAchievableForwardVelocity.set(63.07768261795754);
+                c.maxAchievableStrafeVelocity.set(50.1385458752296);
+                c.naturalForwardDeceleration.set(29.996704795650253);
+                c.naturalStrafeDeceleration.set(66.79610029977103);
             }
     );
 
+    /**
+     * Caps path speed at a fraction of the robot's top speed, from the next loop on. Call it just
+     * before {@code follow()} to slow that path, and {@code setSpeed(1)} to go back to full speed.
+     * Every follower starts at full speed.
+     *
+     * @param fraction 0.5 for half speed; 1 or more for no cap
+     */
+    public static void setSpeed(double fraction) {
+        if (!(fraction > 0)) throw new IllegalArgumentException("Speed must be above 0, not " + fraction);
+        foresightConfig.maxPathSpeed.set(fraction >= 1 ? ForesightConfig.Constraint.NONE : fraction);
+    }
+
     public static Follower create(HardwareMap h) {
+        // The config is shared by every OpMode, so a cap set by one must not carry into the next.
+        setSpeed(1);
         return new Follower(
                 new PinpointLocalizer(h, localizerConfig),
                 new Mecanum(h, drivetrainConfig),
@@ -102,6 +116,7 @@ public class Constants {
      * {@code (FusionLocalizer) follower.localizer}.
      */
     public static Follower createFused(HardwareMap h) {
+        setSpeed(1);
         return new Follower(
                 createFusionLocalizer(h),
                 new Mecanum(h, drivetrainConfig),

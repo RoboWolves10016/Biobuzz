@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.auton;
 
 import static org.firstinspires.ftc.teamcode.Constants.closedBobbyPos;
 import static org.firstinspires.ftc.teamcode.Constants.kF;
@@ -6,23 +6,18 @@ import static org.firstinspires.ftc.teamcode.Constants.kP;
 import static org.firstinspires.ftc.teamcode.Constants.kV;
 import static org.firstinspires.ftc.teamcode.Constants.openBobbyPos;
 
-import com.pedropathing.api.Paths;
-import com.pedropathing.api.PoseFactory;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.math.Pose;
-import com.pedropathing.paths.Path;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import com.robowolves.wolfkit.Logged;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
+import org.firstinspires.ftc.teamcode.RobotState;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 
-@Autonomous(name="Auton UP Side", group="OCCRA")
-public class AutonUp extends OpMode {
+@Autonomous(name="DOWN 1 Tip", group="OCCRA")
+public class AutonDown1 extends StateAuton {
     private final RobotState robotState = RobotState.getInstance();
     private MotorEx intake;
     private MotorEx launcher1;
@@ -32,22 +27,11 @@ public class AutonUp extends OpMode {
     @Logged private double launcherRpm = 0.0;
     @Logged private double targetRpm = 0.0;
 
-    private int state = 0;
-    private final ElapsedTime stateTimer = new ElapsedTime();
-
-    private final PoseFactory poseFactory = PoseFactory.degrees();
-
-    private final Pose start = poseFactory.of(54.75, 7.75, 270);
-    private final Pose path1 = poseFactory.of(13.75, 89, 270);
-    private final Pose path1Control1 = poseFactory.of(15.75, 28.75, 0);
-
-    public Path path1() {
-        return Paths.curve(start, path1Control1, path1).constant(path1);
-    }
-
+    private double delay = 10;
 
     @Override
     public void init() {
+        initTimers();
         drivetrain = Constants.create(hardwareMap);
 
         launcher1 = new MotorEx(hardwareMap, "Launcher1", Motor.GoBILDA.BARE);
@@ -63,17 +47,30 @@ public class AutonUp extends OpMode {
         intake.setInverted(true);
 
         gateBobby = new ServoEx(hardwareMap, "Bobby");
+        advanceState(-1);
+    }
+
+    @Override
+    public void init_loop() {
+        telemetry.addLine("Press A to increase delay, B to decrease delay");
+        telemetry.addData("Configured Delay (s)", delay);
+        if (gamepad1.aWasPressed()) ++delay;
+        if (gamepad1.bWasPressed()) --delay;
     }
 
     @Override
     public void start() {
-        drivetrain.setPose(start);
+        drivetrain.setPose(AutonPaths.downStart);
         stateTimer.reset();
+        autonTimer.reset();
     }
 
     @Override
     public void loop() {
         switch (state) {
+            case -1:
+                if (stateTimer.seconds() > delay) advanceState();
+                break;
             case 0:
                 gateBobby.set(closedBobbyPos);
                 targetRpm = 3200;
@@ -86,7 +83,7 @@ public class AutonUp extends OpMode {
                 gateBobby.set(openBobbyPos);
                 if (stateTimer.seconds() > 1) {
                     advanceState();
-                    drivetrain.follow(path1());
+                    drivetrain.follow(AutonPaths.downStartToPark);
                     targetRpm = 0;
                 }
                 break;
@@ -101,11 +98,6 @@ public class AutonUp extends OpMode {
         loopLauncher();
         drivetrain.update();
         robotState.setPose(drivetrain.pose());
-    }
-
-    private void advanceState() {
-        ++state;
-        stateTimer.reset();
     }
 
     private void loopLauncher() {
