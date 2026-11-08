@@ -56,9 +56,9 @@ public class AutonPaths {
                             .until(1.0, Interpolator.linear(Math.toRadians(-160), crossFieldMidpoint.heading()))),
             line(crossFieldMidpoint, farScoreUnder).tangent());
 
-    public static final Path cornerToScore = path(
-            line(gardenCorner,)
-    )
+//    public static final Path cornerToScore = path(
+//            line(gardenCorner,)
+//    )
 
 //    public static final Path farFlowerIntake = path(
 //            line(farScoreUnder, farPreFlower).linear(farScoreUnder, farPreFlower),
